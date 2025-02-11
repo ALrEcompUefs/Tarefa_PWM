@@ -81,7 +81,7 @@ void rotacionar_servo_0_a_180(){
     // considerando DC 500 = 0º e DC 2400 = 180º
     for(uint16_t passo=500;passo<=2400;passo+=5){
         set_pwm_dc(passo);
-        sleep_ms(5);
+        sleep_ms(10);
     }
 }
 /*
