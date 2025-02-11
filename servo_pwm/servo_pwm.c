@@ -1,20 +1,21 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
+#include "pico/bootrom.h"
 
 // PARAMÊTROS PAR PWM
 //valor máximo do contador - WRAP
 #define WRAP_PERIOD  20000
 //divisor do clock para o PWM 
 #define PWM_DIVISER  125.0f 
-const uint8_t PINO = 22;
+const uint8_t PINO = 22,BOTAO_A=5;
 
 // prótotipo de funções
 void pwm_setup();
 void set_pwm_dc(uint16_t duty_cycle);
 void rotacionar_servo_0_a_180();
 void rotacionar_servo_180_a_0();
-
+static void gpio_irq_handler(uint gpio, uint32_t events);
 int main()
 {
     stdio_init_all();
@@ -30,6 +31,11 @@ int main()
     set_pwm_dc(500);
     sleep_ms(5000);
 
+    // interupção para modo bootsel
+    gpio_init(BOTAO_A);
+    gpio_set_dir(BOTAO_A,GPIO_IN);
+    gpio_pull_up(BOTAO_A);
+    gpio_set_irq_enabled_with_callback(BOTAO_A,GPIO_IRQ_EDGE_FALL,true,&gpio_irq_handler);
     while (true) {
         // Dentro do laço vai fazer o movimento de rotação do servo motor
         printf("Nova rotação de 0 a 180\n");
@@ -46,7 +52,7 @@ void pwm_setup()
     // O clock calculado para o pwm é de 50Hz
     // outras configurações de parâmetro poderiam ser utilizadas para obter esta mesma frequência
     // Mas os requisitos da tarefa limitaram a escolha do valor do wrap
-    
+
     gpio_set_function(PINO, GPIO_FUNC_PWM); //habilitar o pino GPIO como PWM
 
     uint slice = pwm_gpio_to_slice_num(PINO); //obter o canal PWM da GPIO
@@ -90,4 +96,9 @@ void rotacionar_servo_180_a_0(){
         set_pwm_dc(passo);
         sleep_ms(5);
     }
+}
+
+static void gpio_irq_handler(uint gpio, uint32_t events){
+    printf("Modo BOOTSEL ATIVO\n");
+    reset_usb_boot(0,0);
 }
